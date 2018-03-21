@@ -480,4 +480,62 @@ $(document).ready(function () {
 
     }
 
+    /*
+    * Takes in a value for the density of air at a single point and returns
+    * a colour corresponding to the density magnitude.
+    * REDDER = HIGH DENSITY, BLUER = LOW DENSITY.
+    *
+    * densityMax and densityAir are taken as parameters but can be removed if we define
+    * them as global constants at some point. For now they are arbitrary.
+    */
+    function getColour( density, densityMax, densityAir ) {
+      // range is between (airDensity and densityMax)
+      var densityRange = (densityMax - densityAir);
+      var densityHalf = ( (densityMax + densityAir) / 2);
+
+      // Colour initializations
+      var red = 0;
+      var green = 100;
+      var blue = 255;
+
+      // Computes values for red and blue
+      if( density >= densityAir && density <= densityHalf ) {
+        blue = 255;
+        // degree of "redness" is increased in proportion to magnitude of density within given bounds.
+        red = 255*( (density - densityAir)/(densityMax/2 - densityAir) );
+
+      } else if( density > densityHalf && density <= densityMax ) {
+        red = 255;
+        // degree of "blueness" decreased in proportion to magnitude of density within given bounds.
+        blue = 255*( (densityMax - density) / (densityMax - densityHalf) );
+
+      } else if ( density > densityMax ) {
+        red = 255;
+        blue = 0;
+      }
+
+      // Convert to hexadecimal
+      var redHex = rgbToHex( red );
+      var greenHex = rgbToHex( green );
+      var blueHex = rgbToHex( blue );
+
+      // concatenate the colour strings.
+      var colour = redHex.concat( greenHex, blueHex );
+
+      // colour is in the form 0x000000 (hopefully)...
+      return colour;
+    }
+
+    // Helper function for getColour. Works for 0 < rgb < 255.
+    var rgbToHex = function (rgb) {
+      var hex = Number(rgb).toString(16);
+      if (hex.length < 2) {
+        hex = "0" + hex;
+      }
+      return hex;
+    };
+
+
+
+
 });
