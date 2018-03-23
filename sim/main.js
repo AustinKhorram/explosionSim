@@ -35,15 +35,10 @@ $(document).ready(function () {
     var windowHalfX = window.innerWidth / 2;
     var windowHalfY = window.innerHeight / 2;
 
-    var indices = []; // Need for gradient
-    var vertices = [];
-    var normals = [];
-    var colors = [];
+    var colors = []; // Need for gradient
 
-    var size = 128;
-    var segments = size / 2;
-    var halfSize = size / 2;
-    var segmentSize = size / segments;
+    var SIZE = BOUNDS_HALF - 1;
+    var HALF_SIZE = SIZE / 2;
 
     document.getElementById( 'waterSize' ).innerText = WIDTH + ' x ' + WIDTH;
 
@@ -216,37 +211,19 @@ $(document).ready(function () {
 
         var geometry = new THREE.PlaneBufferGeometry( BOUNDS, BOUNDS, WIDTH - 1, WIDTH -1 );
 
-        for ( var i = 0; i <= segments; i++ ) {
-            var y = (i * segmentSize ) - halfSize;
+        for ( var i = 0; i <= HALF_SIZE; i++ ) {
+            var y = i - HALF_SIZE;
 
-            for ( var j = 0; j <= segments; j++ ) {
-                var x = (j * segmentSize) - halfSize;
+            for ( var j = 0; j <= HALF_SIZE; j++ ) {
+                var x = j - HALF_SIZE;
 
-                vertices.push(x, -y, 0);
-                normals.push(0, 0, 1);
+                var r = ( x / (SIZE + 1) ) + 0.5; // Test gradient
+                var g = ( y / (SIZE + 1) ) + 0.5;
 
-                var r = (x/size) + 0.5;
-                var g = (y/size) + 0.5;
-
-                colors.push(r,g,1);
+                colors.push( r, g, 1 );
             }
         }
 
-        for ( var k = 0; k < segments; k ++ ) {
-            for ( var l = 0; l < segments; l ++ ) {
-                var a = k * ( segments + 1 ) + ( l + 1 );
-                var b = k * ( segments + 1 ) + l;
-                var c = ( k + 1 ) * ( segments + 1 ) + l;
-                var d = ( k + 1 ) * ( segments + 1 ) + ( l + 1 );
-                // generate two faces (triangles) per iteration
-                indices.push( a, b, d ); // face one
-                indices.push( b, c, d ); // face two
-            }
-        }
-
-        geometry.setIndex( indices );
-        geometry.addAttribute( 'position', new THREE.Float32BufferAttribute( vertices, 3 ) );
-        geometry.addAttribute( 'normal', new THREE.Float32BufferAttribute( normals, 3 ) );
         geometry.addAttribute( 'color', new THREE.Float32BufferAttribute( colors, 3 ) );
 
         var material = initMaterial();
