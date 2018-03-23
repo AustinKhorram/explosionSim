@@ -102,10 +102,6 @@ $(document).ready(function () {
 
             }
 
-            if ( event.keyCode === 82 ) {
-              initWater();
-            }
-
         } , false );
 
         window.addEventListener( 'resize', onWindowResize, false );
@@ -169,7 +165,7 @@ $(document).ready(function () {
 
     function initMaterial() {
         // material: make a ShaderMaterial clone of MeshPhongMaterial, with customized vertex shader
-        var materialColor = 0x5C85D7;
+        var materialColor = 0xFFFFFF;
 
         var material = new THREE.ShaderMaterial( {
             uniforms: THREE.UniformsUtils.merge( [
@@ -207,8 +203,6 @@ $(document).ready(function () {
 
     function initWater() {
 
-        var materialColor = 0xFFFFFF;
-
         var geometry = new THREE.PlaneBufferGeometry( BOUNDS, BOUNDS, WIDTH - 1, WIDTH -1 );
 
         for ( var i = 0; i <= HALF_SIZE; i++ ) {
@@ -217,13 +211,13 @@ $(document).ready(function () {
             for ( var j = 0; j <= HALF_SIZE; j++ ) {
                 var x = j - HALF_SIZE;
 
-                var r = ( x / (SIZE + 1) ) + 0.5; // Test gradient
-                var g = ( y / (SIZE + 1) ) + 0.5;
+                var r = ( x / SIZE ) + 0.5; // Test gradient
+                var g = ( y / SIZE ) + 0.5;
 
                 colors.push( r, g, 1 );
             }
         }
-
+        // Add 'color' to possible attributes of geometry
         geometry.addAttribute( 'color', new THREE.Float32BufferAttribute( colors, 3 ) );
         geometry.getAttribute( 'color' ).setDynamic(true);
 
@@ -264,6 +258,7 @@ $(document).ready(function () {
         heightmapVariable.material.defines.BOUNDS = BOUNDS.toFixed( 1 );
 
         var error = gpuCompute.init();
+
         if ( error !== null ) {
             console.error( error );
         }
@@ -331,25 +326,26 @@ $(document).ready(function () {
         var currentRenderTarget = gpuCompute.getCurrentRenderTarget( heightmapVariable );
         var alternateRenderTarget = gpuCompute.getAlternateRenderTarget( heightmapVariable );
 
-        var color = waterMesh.geometry.getAttribute('color');
-        color.needsUpdate = true;
+        var meshColor = waterMesh.geometry.getAttribute('color');
+        meshColor.needsUpdate = true;
 
-        for ( var i = 0; i <= color.count; i++ ) {
+        // Update the colors gradient
+        for ( var i = 0; i <= HALF_SIZE*HALF_SIZE; i++ ) {
             var y = i - HALF_SIZE;
-            color.setY(i);
+            meshColor.setY(i);
 
-            for ( var j = 0; j <= color.count ; j++ ) {
+            for ( var j = 0; j <= 1 j++ ) {
                 var x = j - HALF_SIZE;
-                color.setX(j);
+                meshColor.setX(j);
 
-                var g = ( x / (SIZE + 1) ) + 0.5; // Test gradient
-                var b = ( y / (SIZE + 1) ) + 0.5;
+                var g = ( x / SIZE ) + 0.5; // Test gradient
+                var b = ( y / SIZE ) + 0.5;
 
-                color.set( [1, g, b] );
+                meshColor.set( [1, g, b] );
             }
         }
 
-        for ( var i = 0; i < 10; i++ ) {
+        for ( var i = 0; i < 1; i++ ) {
 
             smoothShader.uniforms.texture.value = currentRenderTarget.texture;
             gpuCompute.doRenderTarget( smoothShader, alternateRenderTarget );
@@ -358,6 +354,7 @@ $(document).ready(function () {
             gpuCompute.doRenderTarget( smoothShader, currentRenderTarget );
 
         }
+
     }
 
     function TemperatureField() {
