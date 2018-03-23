@@ -203,7 +203,7 @@ $(document).ready(function () {
 
     function initWater() {
 
-        var geometry = new THREE.PlaneBufferGeometry( BOUNDS, BOUNDS, WIDTH - 1, WIDTH -1 );
+        var geometry = new THREE.PlaneBufferGeometry( BOUNDS, BOUNDS, WIDTH - 1, WIDTH - 1 );
 
         for ( var i = 0; i <= HALF_SIZE; i++ ) {
             var y = i - HALF_SIZE;
@@ -323,9 +323,6 @@ $(document).ready(function () {
 
     function DensityField() {
 
-        var currentRenderTarget = gpuCompute.getCurrentRenderTarget( heightmapVariable );
-        var alternateRenderTarget = gpuCompute.getAlternateRenderTarget( heightmapVariable );
-
         var meshColor = waterMesh.geometry.getAttribute('color');
         meshColor.needsUpdate = true;
 
@@ -334,25 +331,15 @@ $(document).ready(function () {
             var y = i - HALF_SIZE;
             meshColor.setY(i);
 
-            for ( var j = 0; j <= 1 j++ ) {
+            for ( var j = 0; j <= 1; j++ ) {
                 var x = j - HALF_SIZE;
                 meshColor.setX(j);
 
                 var g = ( x / SIZE ) + 0.5; // Test gradient
                 var b = ( y / SIZE ) + 0.5;
 
-                meshColor.set( [1, g, b] );
+                meshColor.set( [0, 0, 1] );
             }
-        }
-
-        for ( var i = 0; i < 1; i++ ) {
-
-            smoothShader.uniforms.texture.value = currentRenderTarget.texture;
-            gpuCompute.doRenderTarget( smoothShader, alternateRenderTarget );
-
-            smoothShader.uniforms.texture.value = alternateRenderTarget.texture;
-            gpuCompute.doRenderTarget( smoothShader, currentRenderTarget );
-
         }
 
     }
