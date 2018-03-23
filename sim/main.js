@@ -10,11 +10,11 @@ $(document).ready(function () {
     if ( hash ) hash = parseInt( hash, 0 );
 
     // Texture width for simulation
-    var WIDTH = hash || 128;
+    var WIDTH = 32;
     var NUM_TEXELS = WIDTH * WIDTH;
 
     // Water size in system units
-    var BOUNDS = 512;
+    var BOUNDS = WIDTH * 4;
     var BOUNDS_HALF = BOUNDS * 0.5;
 
     var container, stats;
@@ -65,7 +65,7 @@ $(document).ready(function () {
         document.body.appendChild( container );
 
         camera = new THREE.PerspectiveCamera( 80, window.innerWidth / window.innerHeight, 1, 3000 );
-        camera.position.set( 0, 350, 0);
+        camera.position.set( 0, 50, 0);
 
         scene = new THREE.Scene();
 
@@ -214,7 +214,7 @@ $(document).ready(function () {
                 var r = ( x / SIZE ) + 0.5; // Test gradient
                 var g = ( y / SIZE ) + 0.5;
 
-                colors.push( r, g, 1 );
+                colors.push( r, g, 0.3 );
             }
         }
         // Add 'color' to possible attributes of geometry
@@ -329,16 +329,13 @@ $(document).ready(function () {
         // Update the colors gradient
         for ( var i = 0; i <= HALF_SIZE*HALF_SIZE; i++ ) {
             var y = i - HALF_SIZE;
-            meshColor.setY(i);
 
-            for ( var j = 0; j <= 1; j++ ) {
+            for ( var j = 0; j <= HALF_SIZE*HALF_SIZE; j++ ) {
                 var x = j - HALF_SIZE;
-                meshColor.setX(j);
 
-                var g = ( x / SIZE ) + 0.5; // Test gradient
-                var b = ( y / SIZE ) + 0.5;
-
-                meshColor.set( [0, 0, 1] );
+                meshColor.setX(200);
+                meshColor.setY(i / HALF_SIZE*HALF_SIZE);
+                meshColor.setZ(j / HALF_SIZE*HALF_SIZE);
             }
         }
 
