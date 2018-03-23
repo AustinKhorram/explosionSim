@@ -35,6 +35,16 @@ $(document).ready(function () {
     var windowHalfX = window.innerWidth / 2;
     var windowHalfY = window.innerHeight / 2;
 
+    var indices = []; // Need for gradient
+    var vertices = [];
+    var normals = [];
+    var colors = [];
+
+    var size = 128;
+    var segments = size / 2;
+    var halfSize = size / 2;
+    var segmentSize = size / segments;
+
     document.getElementById( 'waterSize' ).innerText = WIDTH + ' x ' + WIDTH;
 
     function change(n) {
@@ -194,14 +204,50 @@ $(document).ready(function () {
         // Defines
         material.defines.WIDTH = WIDTH.toFixed( 1 );
         material.defines.BOUNDS = BOUNDS.toFixed( 1 );
+
+        material.vertexColors = THREE.VertexColors; // Need for gradient
+
         return material;
     }
 
     function initWater() {
 
-        var materialColor = 0x5C85D7;
+        var materialColor = 0xFFFFFF;
 
         var geometry = new THREE.PlaneBufferGeometry( BOUNDS, BOUNDS, WIDTH - 1, WIDTH -1 );
+
+        for ( var i = 0; i <= segments; i++ ) {
+            var y = (i * segmentSize ) - halfSize;
+
+            for ( var j = 0; j <= segments; j++ ) {
+                var x = (j * segmentSize) - halfSize;
+
+                vertices.push(x, -y, 0);
+                normals.push(0, 0, 1);
+
+                var r = (x/size) + 0.5;
+                var g = (y/size) + 0.5;
+
+                colors.push(r,g,1);
+            }
+        }
+
+        for ( var k = 0; k < segments; k ++ ) {
+            for ( var l = 0; l < segments; l ++ ) {
+                var a = k * ( segments + 1 ) + ( l + 1 );
+                var b = k * ( segments + 1 ) + l;
+                var c = ( k + 1 ) * ( segments + 1 ) + l;
+                var d = ( k + 1 ) * ( segments + 1 ) + ( l + 1 );
+                // generate two faces (triangles) per iteration
+                indices.push( a, b, d ); // face one
+                indices.push( b, c, d ); // face two
+            }
+        }
+
+        geometry.setIndex( indices );
+        geometry.addAttribute( 'position', new THREE.Float32BufferAttribute( vertices, 3 ) );
+        geometry.addAttribute( 'normal', new THREE.Float32BufferAttribute( normals, 3 ) );
+        geometry.addAttribute( 'color', new THREE.Float32BufferAttribute( colors, 3 ) );
 
         var material = initMaterial();
         waterUniforms = material.uniforms;
@@ -307,23 +353,16 @@ $(document).ready(function () {
         var currentRenderTarget = gpuCompute.getCurrentRenderTarget( heightmapVariable );
         var alternateRenderTarget = gpuCompute.getAlternateRenderTarget( heightmapVariable );
 
-        var newGeometry = new THREE.PlaneBufferGeometry( BOUNDS, BOUNDS, WIDTH - 1, WIDTH -1 );
-        var newMaterial = initMaterial();
+        waterMesh.geometry.needsUpdate = true;
+        waterMesh.geometry.colorNeedsUpdate = true;
 
-        newMaterial.vertexColors = THREE.VertexColors;
-        newMaterial.colorWrite = true;
-
-        for ( var iDens = 0; iDens < newGeometry.color.length; iDens++ ) {
-            if ( iDens % 2 === 0 ) {
-                newGeometry.color[iDens] = [green, green, green];
+        for ( var j = 0; j < size; j++) {
+            if ( j % 2 === 0) {
+                colors[j].copy(255, 0, 0);
             } else {
-                newGeometry.color[iDens] = [blue, blue, blue];
+                colors[j].copy(0, 255, 0);
             }
         }
-
-        waterUniforms = newMaterial.uniforms;
-        waterMesh.material = newMaterial;
-        waterMesh.geometry = newGeometry;
 
         for ( var i = 0; i < 10; i++ ) {
 
