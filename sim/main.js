@@ -225,6 +225,7 @@ $(document).ready(function () {
         }
 
         geometry.addAttribute( 'color', new THREE.Float32BufferAttribute( colors, 3 ) );
+        geometry.getAttribute( 'color' ).setDynamic(true);
 
         var material = initMaterial();
         waterUniforms = material.uniforms;
@@ -330,14 +331,21 @@ $(document).ready(function () {
         var currentRenderTarget = gpuCompute.getCurrentRenderTarget( heightmapVariable );
         var alternateRenderTarget = gpuCompute.getAlternateRenderTarget( heightmapVariable );
 
-        waterMesh.geometry.needsUpdate = true;
-        waterMesh.geometry.colorNeedsUpdate = true;
+        var color = waterMesh.geometry.getAttribute('color');
+        color.needsUpdate = true;
 
-        for ( var j = 0; j < size; j++) {
-            if ( j % 2 === 0) {
-                colors[j].copy(255, 0, 0);
-            } else {
-                colors[j].copy(0, 255, 0);
+        for ( var i = 0; i <= color.count; i++ ) {
+            var y = i - HALF_SIZE;
+            color.setY(i);
+
+            for ( var j = 0; j <= color.count ; j++ ) {
+                var x = j - HALF_SIZE;
+                color.setX(j);
+
+                var g = ( x / (SIZE + 1) ) + 0.5; // Test gradient
+                var b = ( y / (SIZE + 1) ) + 0.5;
+
+                color.set( [1, g, b] );
             }
         }
 
