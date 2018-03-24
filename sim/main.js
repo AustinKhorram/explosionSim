@@ -9,7 +9,7 @@ $(document).ready(function () {
     var hash = document.location.hash.substr( 1 );
     if ( hash ) hash = parseInt( hash, 0 );
 
-    // Texture width for simulation
+    // Texture width for simulation -- 32 SEEMS OPTIMAL
     var WIDTH = 32;
     var NUM_TEXELS = WIDTH * WIDTH;
 
