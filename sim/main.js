@@ -65,7 +65,7 @@ $(document).ready(function () {
         document.body.appendChild( container );
 
         camera = new THREE.PerspectiveCamera( 80, window.innerWidth / window.innerHeight, 1, 3000 );
-        camera.position.set( 0, 50, 0);
+        camera.position.set( 0, 100, 0);
 
         scene = new THREE.Scene();
 
@@ -214,7 +214,7 @@ $(document).ready(function () {
                 var r = ( x / SIZE ) + 0.5; // Test gradient
                 var g = ( y / SIZE ) + 0.5;
 
-                colors.push( r, g, 0.3 );
+                colors.push( r, g, 0.5 );
             }
         }
         // Add 'color' to possible attributes of geometry
@@ -304,6 +304,9 @@ $(document).ready(function () {
 
     }
 
+    /*
+     * Causes the Mesh to become stationary (eliminate all noise).
+     */
     function SmoothField() {
 
         var currentRenderTarget = gpuCompute.getCurrentRenderTarget( heightmapVariable );
@@ -318,75 +321,66 @@ $(document).ready(function () {
             gpuCompute.doRenderTarget( smoothShader, currentRenderTarget );
 
         }
-
     }
-
+    /*
+     * Maps DENSITY values to specific COLORS on the mesh.
+     * GREEN = HIGH, BLUE = LOW (can change color schemes).
+     */
     function DensityField() {
 
         var meshColor = waterMesh.geometry.getAttribute('color');
         meshColor.needsUpdate = true;
 
+        // Keeps track of vertex index.
+        // TOP LEFT = 0, BOTTOM RIGHT = WIDTH^2 (32 x 32 = 1024).
+        var count = 0;
+
         // Update the colors gradient
-        for ( var i = 0; i <= HALF_SIZE*HALF_SIZE; i++ ) {
-            var y = i - HALF_SIZE;
+        for ( var i = 0; i <= WIDTH; i++ ) {
 
-            for ( var j = 0; j <= HALF_SIZE*HALF_SIZE; j++ ) {
-                var x = j - HALF_SIZE;
+            for ( var j = 0; j <= WIDTH; j++ ) {
+                var magnitude = 2 * count/(WIDTH*WIDTH);
 
-                meshColor.setX(200);
-                meshColor.setY(i / HALF_SIZE*HALF_SIZE);
-                meshColor.setZ(j / HALF_SIZE*HALF_SIZE);
+                // X = RED, Y = GREEN, Z = BLUE
+                meshColor.setX(count, 0);
+                meshColor.setY(count, magnitude);
+                meshColor.setZ(count, magnitude);
+
+                count++;
             }
         }
 
     }
 
+    /*
+     * Maps TEMPERATURE values to specific COLORS on the mesh.
+     * RED = HIGH, BLUE = LOW (can change color schemes).
+     */
     function TemperatureField() {
-        var currentRenderTarget = gpuCompute.getCurrentRenderTarget( heightmapVariable );
-        var alternateRenderTarget = gpuCompute.getAlternateRenderTarget( heightmapVariable );
-
-        for ( var i = 0; i < 10; i++ ) {
-
-            smoothShader.uniforms.texture.value = currentRenderTarget.texture;
-            gpuCompute.doRenderTarget( smoothShader, alternateRenderTarget );
-
-            smoothShader.uniforms.texture.value = alternateRenderTarget.texture;
-            gpuCompute.doRenderTarget( smoothShader, currentRenderTarget );
 
         }
     }
 
+    /*
+     * Maps VELOCITY values to specific COLORS on the mesh.
+     * GREEN = HIGH, BLUE = LOW (can change color schemes).
+     */
     function VelocityField() {
-        var currentRenderTarget = gpuCompute.getCurrentRenderTarget( heightmapVariable );
-        var alternateRenderTarget = gpuCompute.getAlternateRenderTarget( heightmapVariable );
-
-        for ( var i = 0; i < 10; i++ ) {
-
-            smoothShader.uniforms.texture.value = currentRenderTarget.texture;
-            gpuCompute.doRenderTarget( smoothShader, alternateRenderTarget );
-
-            smoothShader.uniforms.texture.value = alternateRenderTarget.texture;
-            gpuCompute.doRenderTarget( smoothShader, currentRenderTarget );
 
         }
     }
 
+    /*
+     * Maps PRESSURE values to specific COLORS on the mesh.
+     * GREEN = HIGH, BLUE = LOW (can change color schemes).
+     */
     function PressureField() {
-        var currentRenderTarget = gpuCompute.getCurrentRenderTarget( heightmapVariable );
-        var alternateRenderTarget = gpuCompute.getAlternateRenderTarget( heightmapVariable );
-
-        for ( var i = 0; i < 10; i++ ) {
-
-            smoothShader.uniforms.texture.value = currentRenderTarget.texture;
-            gpuCompute.doRenderTarget( smoothShader, alternateRenderTarget );
-
-            smoothShader.uniforms.texture.value = alternateRenderTarget.texture;
-            gpuCompute.doRenderTarget( smoothShader, currentRenderTarget );
 
         }
     }
 
 
+    // need to add comments for rest of the functions below.
     function onWindowResize() {
 
         windowHalfX = window.innerWidth / 2;
@@ -485,60 +479,72 @@ $(document).ready(function () {
 
     }
 
-    /*
-    * Takes in a value for the density of air at a single point and returns
-    * a colour corresponding to the density magnitude.
-    * REDDER = HIGH DENSITY, BLUER = LOW DENSITY.
+   /*
+    * INPUT: density (for a single vertex), maximum density, ambient density.
     *
+    * REDDER = HIGH DENSITY, BLUER = LOW DENSITY.
     * densityMax and densityAir are taken as parameters but can be removed if we define
     * them as global constants at some point. For now they are arbitrary.
+    *
+    * RETURN: array containing RGB in [0], [1], [2]. Values between 0 and 2.
     */
     function getColour( density, densityMax, densityAir ) {
       // range is between (airDensity and densityMax)
       var densityRange = (densityMax - densityAir);
       var densityHalf = ( (densityMax + densityAir) / 2);
 
+      var returnColor = [];
+
       // Colour initializations
       var red = 0;
-      var green = 100;
-      var blue = 255;
+      var green = 0;
+      var blue = 0;
 
       // Computes values for red and blue
+      // VALUES SHOULD BE BETWEEN 0 AND 2(?).
       if( density >= densityAir && density <= densityHalf ) {
-        blue = 255;
-        // degree of "redness" is increased in proportion to magnitude of density within given bounds.
-        red = 255*( (density - densityAir)/(densityMax/2 - densityAir) );
+        blue = 2;
+        // degree of "greenness" is increased in proportion to magnitude of density within given bounds.
+        green = 2 * ( ( density - densityAir ) / ( densityMax / 2 - densityAir ) );
 
       } else if( density > densityHalf && density <= densityMax ) {
-        red = 255;
+        green = 2;
         // degree of "blueness" decreased in proportion to magnitude of density within given bounds.
-        blue = 255*( (densityMax - density) / (densityMax - densityHalf) );
+        blue = 2 * ( (densityMax - density) / (densityMax - densityHalf) );
 
       } else if ( density > densityMax ) {
-        red = 255;
+        green = 2;
         blue = 0;
       }
 
-      // Convert to hexadecimal
-      var redHex = rgbToHex( red );
-      var greenHex = rgbToHex( green );
-      var blueHex = rgbToHex( blue );
+      returnColor[0] = red;
+      returnColor[1] = green;
+      returnColor[2] = blue;
 
-      // concatenate the colour strings.
-      var colour = redHex.concat( greenHex, blueHex );
+      return returnColor;
 
-      // colour is in the form 0x000000 (hopefully)...
-      return colour;
+      // MIGHT NOT NEED THIS
+      // // Convert to hexadecimal
+      // var redHex = rgbToHex( red );
+      // var greenHex = rgbToHex( green );
+      // var blueHex = rgbToHex( blue );
+      //
+      // // concatenate the colour strings.
+      // var colour = redHex.concat( greenHex, blueHex );
+      //
+      // // colour is in the form 0x000000 (hopefully)...
+      // return colour;
     }
 
     // Helper function for getColour. Works for 0 < rgb < 255.
-    var rgbToHex = function (rgb) {
-      var hex = Number(rgb).toString(16);
-      if (hex.length < 2) {
-        hex = "0" + hex;
-      }
-      return hex;
-    };
+    // MIGHT NOT NEED THIS, COMMENTED OUT FOR NOW.
+    // var rgbToHex = function (rgb) {
+    //   var hex = Number(rgb).toString(16);
+    //   if (hex.length < 2) {
+    //     hex = "0" + hex;
+    //   }
+    //   return hex;
+    // };
 
 
 
