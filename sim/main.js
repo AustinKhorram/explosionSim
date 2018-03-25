@@ -1,13 +1,9 @@
 $(document).ready(function () {
     if (!Detector.webgl) {
-
+        // Will not work unless browser supports WebGL
         Detector.addGetWebGLMessage();
         document.getElementById('container').innerHTML = "";
-
     }
-
-    var hash = document.location.hash.substr( 1 );
-    if ( hash ) hash = parseInt( hash, 0 );
 
     // Texture width for simulation -- 32 SEEMS OPTIMAL
     var WIDTH = 32;
@@ -16,6 +12,10 @@ $(document).ready(function () {
     // Water size in system units
     var BOUNDS = WIDTH * 4;
     var BOUNDS_HALF = BOUNDS * 0.5;
+
+    // Size in terms of number of vertices
+    var SIZE = BOUNDS_HALF - 1;
+    var HALF_SIZE = SIZE / 2;
 
     var container, stats;
     var camera, scene, renderer, controls;
@@ -36,26 +36,6 @@ $(document).ready(function () {
     var windowHalfY = window.innerHeight / 2;
 
     var colors = []; // Need for gradient
-
-    var SIZE = BOUNDS_HALF - 1;
-    var HALF_SIZE = SIZE / 2;
-
-    document.getElementById( 'waterSize' ).innerText = WIDTH + ' x ' + WIDTH;
-
-    function change(n) {
-        location.hash = n;
-        location.reload();
-        return false;
-    }
-
-    var options = '';
-
-    for ( var i = 4; i < 10; i++ ) {
-        var j = Math.pow( 2, i );
-        options += '<a href="#" onclick="return change(' + j + ')">' + j + 'x' + j + '</a> ';
-    }
-
-    document.getElementById('options').innerHTML = options;
 
     init();
     animate();
