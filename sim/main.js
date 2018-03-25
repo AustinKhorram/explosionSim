@@ -9,7 +9,7 @@ $(document).ready(function () {
     var WIDTH = 32;
     var NUM_TEXELS = WIDTH * WIDTH;
 
-    // Water size in system units
+    // Size in system units
     var BOUNDS = WIDTH * 4;
     var BOUNDS_HALF = BOUNDS * 0.5;
 
@@ -36,6 +36,7 @@ $(document).ready(function () {
     var windowHalfY = window.innerHeight / 2;
 
     var colors = []; // Need for gradient
+    var colorsDefault;
 
     init();
     animate();
@@ -49,21 +50,17 @@ $(document).ready(function () {
         container = document.createElement( 'div' );
         document.body.appendChild( container );
 
-        // Initalize Camera
+        // Initalize Camera/Scene
         camera = new THREE.PerspectiveCamera( 80, window.innerWidth / window.innerHeight, 1, 3000 );
         camera.position.set( 0, 100, 0);
-
-        // Initalize Scene
         scene = new THREE.Scene();
 
-        // Possibly unnecessary
-        var sun = new THREE.DirectionalLight( 0xFFFFFF, 1.0 );
-        sun.position.set( 300, 400, 175 );
-        scene.add( sun );
-
-        // Possibly unnecessary
-        var sun2 = new THREE.DirectionalLight( 0x40A040, 0.6 );
-        sun2.position.set( -100, 350, -200 );
+        // Lighting for our scene (we need this)
+        var sun1 = new THREE.DirectionalLight( 0xFFFFFF, 1.0 );
+        sun1.position.set( 100, 200, 100 );
+        scene.add( sun1 );
+        var sun2 = new THREE.DirectionalLight( 0xFFFFFF, 0.6 );
+        sun2.position.set( -100, 200, -100 );
         scene.add( sun2 );
 
         // Render WebGL
@@ -72,11 +69,8 @@ $(document).ready(function () {
         renderer.setSize( window.innerWidth, window.innerHeight );
         container.appendChild( renderer.domElement );
 
-        // Set controls for camera interaction (I think)...
+        // Set controls for camera interaction
         controls = new THREE.OrbitControls( camera, renderer.domElement );
-
-        stats = new Stats();
-        container.appendChild( stats.dom );
 
         // Adding events for user interactivity (I think)...
         document.addEventListener( 'mousemove', onDocumentMouseMove, false );
@@ -89,7 +83,6 @@ $(document).ready(function () {
 
                 waterMesh.material.wireframe = ! waterMesh.material.wireframe;
                 waterMesh.material.needsUpdate = true;
-
             }
 
         } , false );
@@ -97,6 +90,9 @@ $(document).ready(function () {
         window.addEventListener( 'resize', onWindowResize, false );
 
         var gui = new dat.GUI();
+
+        stats = new Stats();
+        document.body.appendChild(stats.dom);
 
         var effectController = {
             mouseSize: 20.0,
@@ -107,40 +103,45 @@ $(document).ready(function () {
 
             heightmapVariable.material.uniforms.mouseSize.value = effectController.mouseSize;
             heightmapVariable.material.uniforms.viscosityConstant.value = effectController.viscosity;
-
         };
 
         gui.add( effectController, "mouseSize", 1.0, 100.0, 1.0 ).onChange( valuesChanger );
         gui.add( effectController, "viscosity", 0.0, 0.03, 0.001 ).onChange( valuesChanger );
 
         // Buttons for toggling the various propagations (temp, pressure, vel, density)
+        var buttonDefault = {
+            DefaultField: function() {
+                DefaultField();
+            }
+        };
         var buttonSmooth = {
             SmoothField: function() {
-            SmoothField();
+                SmoothField();
             }
         };
         var buttonDensity = {
             DensityField: function() {
-            DensityField();
+                DensityField();
             }
         };
         var buttonTemp = {
             TemperatureField: function() {
-            TemperatureField();
+                TemperatureField();
             }
         };
         var buttonPres = {
             PressureField: function() {
-            PressureField();
+                PressureField();
             }
         };
         var buttonVel = {
             VelocityField: function() {
-            VelocityField();
+                VelocityField();
             }
         };
 
         // Add buttons to the GUI.
+        gui.add( buttonDefault, 'DefaultField' );
         gui.add( buttonSmooth, 'SmoothField' );
         gui.add( buttonDensity, 'DensityField' );
         gui.add( buttonVel, 'VelocityField' );
@@ -206,9 +207,11 @@ $(document).ready(function () {
                 colors.push( r, g, 0.5 );
             }
         }
+
         // Add 'color' to possible attributes of geometry
         geometry.addAttribute( 'color', new THREE.Float32BufferAttribute( colors, 3 ) );
         geometry.getAttribute( 'color' ).setDynamic(true);
+        colorsDefault = geometry.getAttribute( 'color' ).clone();
 
         var material = initMaterial();
         waterUniforms = material.uniforms;
@@ -254,7 +257,6 @@ $(document).ready(function () {
 
         // Create compute shader to smooth the water surface and velocity
         smoothShader = gpuCompute.createShaderMaterial( document.getElementById( 'smoothFragmentShader' ).textContent, { texture: { value: null } } );
-
     }
 
     function fillTexture( texture ) {
@@ -290,7 +292,6 @@ $(document).ready(function () {
                 p += 4;
             }
         }
-
     }
 
     /*
@@ -308,8 +309,14 @@ $(document).ready(function () {
 
             smoothShader.uniforms.texture.value = alternateRenderTarget.texture;
             gpuCompute.doRenderTarget( smoothShader, currentRenderTarget );
-
         }
+    }
+
+    function DefaultField() {
+
+        var meshColor = waterMesh.geometry.getAttribute('color');
+        meshColor.needsUpdate = true;
+        meshColor = colorsDefault;
     }
     /*
      * Maps DENSITY values to specific COLORS on the mesh.
@@ -320,25 +327,15 @@ $(document).ready(function () {
         var meshColor = waterMesh.geometry.getAttribute('color');
         meshColor.needsUpdate = true;
 
-        // Keeps track of vertex index.
-        // TOP LEFT = 0, BOTTOM RIGHT = WIDTH^2 (32 x 32 = 1024).
-        var count = 0;
-
         // Update the colors gradient
-        for ( var i = 0; i <= WIDTH; i++ ) {
-
-            for ( var j = 0; j <= WIDTH; j++ ) {
-                var magnitude = 2 * count/(WIDTH*WIDTH);
-
-                // X = RED, Y = GREEN, Z = BLUE
-                meshColor.setX(count, 0);
-                meshColor.setY(count, magnitude);
-                meshColor.setZ(count, magnitude);
-
-                count++;
-            }
+        // i = index, TOP LEFT = 0, BOTTOM RIGHT = WIDTH^2 (32 x 32 = 1024).
+        for ( var i = 0; i <= WIDTH*WIDTH; i++ ) {
+            var magnitude = 2 * i/(WIDTH*WIDTH);
+            // X = RED, Y = GREEN, Z = BLUE
+            meshColor.setX(i, 0);
+            meshColor.setY(i, magnitude);
+            meshColor.setZ(i, magnitude);
         }
-
     }
 
     /*
@@ -349,14 +346,12 @@ $(document).ready(function () {
 
        var meshColor = waterMesh.geometry.getAttribute('color');
        meshColor.needsUpdate = true;
-
+       /*
        // Iterate through each PRESSURE value, map to a color, and write color to mesh.
        for( var i = 0; i <= WIDTH*WIDTH; i++ ) {
           var instPressure = pressureArray[i];
-
-
        }
-
+       */
      }
 
     /*
@@ -365,7 +360,18 @@ $(document).ready(function () {
      */
     function TemperatureField() {
 
+        var meshColor = waterMesh.geometry.getAttribute('color');
+        meshColor.needsUpdate = true;
 
+        // Keeps track of vertex index.
+        // TOP LEFT = 0, BOTTOM RIGHT = WIDTH^2 (32 x 32 = 1024).
+        for ( var i = 0; i <= WIDTH*WIDTH; i++ ) {
+            var magnitude = 2 * i/(WIDTH*WIDTH);
+            // X = RED, Y = GREEN, Z = BLUE
+            meshColor.setY(i, 0);
+            meshColor.setX(i, magnitude);
+            meshColor.setZ(i, magnitude);
+        }
     }
 
     /*
@@ -374,7 +380,16 @@ $(document).ready(function () {
      */
     function VelocityField() {
 
+        var meshColor = waterMesh.geometry.getAttribute('color');
+        meshColor.needsUpdate = true;
 
+        for ( var i = 0; i <= WIDTH*WIDTH; i++ ) {
+            var magnitude = 2 * i/(WIDTH*WIDTH);
+            // X = RED, Y = GREEN, Z = BLUE
+            meshColor.setZ(i, 0);
+            meshColor.setX(i, magnitude);
+            meshColor.setY(i, magnitude);
+        }
     }
 
 
@@ -388,20 +403,17 @@ $(document).ready(function () {
         camera.updateProjectionMatrix();
 
         renderer.setSize( window.innerWidth, window.innerHeight );
-
     }
 
     function setMouseCoords( x, y ) {
 
         mouseCoords.set( ( x / renderer.domElement.clientWidth ) * 2 - 1, - ( y / renderer.domElement.clientHeight ) * 2 + 1 );
         mouseMoved = true;
-
     }
 
     function onDocumentMouseMove( event ) {
 
         setMouseCoords( event.clientX, event.clientY );
-
     }
 
     function onDocumentTouchStart( event ) {
@@ -409,12 +421,8 @@ $(document).ready(function () {
         if ( event.touches.length === 1 ) {
 
             event.preventDefault();
-
             setMouseCoords( event.touches[ 0 ].pageX, event.touches[ 0 ].pageY );
-
-
         }
-
     }
 
     function onDocumentTouchMove( event ) {
@@ -422,21 +430,15 @@ $(document).ready(function () {
         if ( event.touches.length === 1 ) {
 
             event.preventDefault();
-
             setMouseCoords( event.touches[ 0 ].pageX, event.touches[ 0 ].pageY );
-
-
         }
-
     }
 
     function animate() {
 
         requestAnimationFrame( animate );
-
         render();
         stats.update();
-
     }
 
     function render() {
@@ -474,7 +476,6 @@ $(document).ready(function () {
 
         // Render
         renderer.render( scene, camera );
-
     }
 
    /*
@@ -543,8 +544,5 @@ $(document).ready(function () {
     //   }
     //   return hex;
     // };
-
-
-
 
 });
