@@ -48,53 +48,63 @@ $(document).ready(function () {
         return false;
     }
 
-
     var options = '';
+
     for ( var i = 4; i < 10; i++ ) {
         var j = Math.pow( 2, i );
         options += '<a href="#" onclick="return change(' + j + ')">' + j + 'x' + j + '</a> ';
     }
+
     document.getElementById('options').innerHTML = options;
 
     init();
     animate();
 
+    /*
+     * Initialize camera, scene, and inital renders.
+     * Setup GUI, mouse interaction, initalize "water" and interactivity.
+     */
     function init() {
 
         container = document.createElement( 'div' );
         document.body.appendChild( container );
 
+        // Initalize Camera
         camera = new THREE.PerspectiveCamera( 80, window.innerWidth / window.innerHeight, 1, 3000 );
         camera.position.set( 0, 100, 0);
 
+        // Initalize Scene
         scene = new THREE.Scene();
 
+        // Possibly unnecessary
         var sun = new THREE.DirectionalLight( 0xFFFFFF, 1.0 );
         sun.position.set( 300, 400, 175 );
         scene.add( sun );
 
+        // Possibly unnecessary
         var sun2 = new THREE.DirectionalLight( 0x40A040, 0.6 );
         sun2.position.set( -100, 350, -200 );
         scene.add( sun2 );
 
+        // Render WebGL
         renderer = new THREE.WebGLRenderer();
         renderer.setPixelRatio( window.devicePixelRatio );
         renderer.setSize( window.innerWidth, window.innerHeight );
         container.appendChild( renderer.domElement );
 
+        // Set controls for camera interaction (I think)...
         controls = new THREE.OrbitControls( camera, renderer.domElement );
-
 
         stats = new Stats();
         container.appendChild( stats.dom );
 
+        // Adding events for user interactivity (I think)...
         document.addEventListener( 'mousemove', onDocumentMouseMove, false );
         document.addEventListener( 'touchstart', onDocumentTouchStart, false );
         document.addEventListener( 'touchmove', onDocumentTouchMove, false );
 
+        // Toggle wirefrae when key W is pressed.
         document.addEventListener( 'keydown', function( event ) {
-
-            // W Pressed: Toggle wireframe
             if ( event.keyCode === 87 ) {
 
                 waterMesh.material.wireframe = ! waterMesh.material.wireframe;
@@ -105,7 +115,6 @@ $(document).ready(function () {
         } , false );
 
         window.addEventListener( 'resize', onWindowResize, false );
-
 
         var gui = new dat.GUI();
 
@@ -151,6 +160,7 @@ $(document).ready(function () {
             }
         };
 
+        // Add buttons to the GUI.
         gui.add( buttonSmooth, 'SmoothField' );
         gui.add( buttonDensity, 'DensityField' );
         gui.add( buttonVel, 'VelocityField' );
@@ -160,7 +170,6 @@ $(document).ready(function () {
         initWater();
 
         valuesChanger();
-
     }
 
     function initMaterial() {
@@ -353,12 +362,30 @@ $(document).ready(function () {
     }
 
     /*
+     * Maps PRESSURE values to specific COLORS on the mesh
+     * GREEN = HIGH, BLUE = LOW (can change color schemes).
+     */
+     function PressureField(pressureArray) {
+
+       var meshColor = waterMesh.geometry.getAttribute('color');
+       meshColor.needsUpdate = true;
+
+       // Iterate through each PRESSURE value, map to a color, and write color to mesh.
+       for( var i = 0; i <= WIDTH*WIDTH; i++ ) {
+          var instPressure = pressureArray[i];
+
+
+       }
+
+     }
+
+    /*
      * Maps TEMPERATURE values to specific COLORS on the mesh.
      * RED = HIGH, BLUE = LOW (can change color schemes).
      */
     function TemperatureField() {
 
-        }
+
     }
 
     /*
@@ -367,16 +394,7 @@ $(document).ready(function () {
      */
     function VelocityField() {
 
-        }
-    }
 
-    /*
-     * Maps PRESSURE values to specific COLORS on the mesh.
-     * GREEN = HIGH, BLUE = LOW (can change color schemes).
-     */
-    function PressureField() {
-
-        }
     }
 
 
