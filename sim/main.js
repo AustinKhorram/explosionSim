@@ -294,6 +294,7 @@ $(document).ready(function () {
         }
     }
 
+
     /*
      * Causes the Mesh to become stationary (eliminate all noise).
      */
@@ -312,6 +313,9 @@ $(document).ready(function () {
         }
     }
 
+    /*
+     * Reset color gradient state to default
+     */
     function DefaultField() {
 
         var meshColor = waterMesh.geometry.getAttribute('color');
@@ -330,9 +334,9 @@ $(document).ready(function () {
         // Update the colors gradient
         // i = index, TOP LEFT = 0, BOTTOM RIGHT = WIDTH^2 (32 x 32 = 1024).
         for ( var i = 0; i <= WIDTH*WIDTH; i++ ) {
-            var magnitude = 2 * i/(WIDTH*WIDTH);
+            var magnitude = i/(WIDTH*WIDTH);
             // X = RED, Y = GREEN, Z = BLUE
-            meshColor.setX(i, 0);
+            meshColor.setX(i, 0.5);
             meshColor.setY(i, magnitude);
             meshColor.setZ(i, magnitude);
         }
@@ -366,9 +370,9 @@ $(document).ready(function () {
         // Keeps track of vertex index.
         // TOP LEFT = 0, BOTTOM RIGHT = WIDTH^2 (32 x 32 = 1024).
         for ( var i = 0; i <= WIDTH*WIDTH; i++ ) {
-            var magnitude = 2 * i/(WIDTH*WIDTH);
+            var magnitude = i/(WIDTH*WIDTH);
             // X = RED, Y = GREEN, Z = BLUE
-            meshColor.setY(i, 0);
+            meshColor.setY(i, 0.5);
             meshColor.setX(i, magnitude);
             meshColor.setZ(i, magnitude);
         }
@@ -384,9 +388,9 @@ $(document).ready(function () {
         meshColor.needsUpdate = true;
 
         for ( var i = 0; i <= WIDTH*WIDTH; i++ ) {
-            var magnitude = 2 * i/(WIDTH*WIDTH);
+            var magnitude = i/(WIDTH*WIDTH);
             // X = RED, Y = GREEN, Z = BLUE
-            meshColor.setZ(i, 0);
+            meshColor.setZ(i, 0.5);
             meshColor.setX(i, magnitude);
             meshColor.setY(i, magnitude);
         }
