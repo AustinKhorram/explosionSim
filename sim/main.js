@@ -139,6 +139,11 @@ $(document).ready(function () {
                 VelocityField();
             }
         };
+        var buttonExplosion = {
+            Explosion: function() {
+                Explosion();
+            }
+        }
 
         // Add buttons to the GUI.
         gui.add( buttonDefault, 'DefaultField' );
@@ -147,6 +152,7 @@ $(document).ready(function () {
         gui.add( buttonVel, 'VelocityField' );
         gui.add( buttonPres, 'PressureField' );
         gui.add( buttonTemp, 'TemperatureField' );
+        gui.add( buttonExplosion, 'Explosion' );
 
         initWater();
 
@@ -294,7 +300,6 @@ $(document).ready(function () {
         }
     }
 
-
     /*
      * Causes the Mesh to become stationary (eliminate all noise).
      */
@@ -313,6 +318,13 @@ $(document).ready(function () {
         }
     }
 
+    /*
+     * Function to create an explosion in centre
+     */
+    function Explosion() {
+        var uniforms = heightmapVariable.material.uniforms;
+        uniforms.mousePos.value.set( 10000, 10000 );
+    }
     /*
      * Reset color gradient state to default
      */
