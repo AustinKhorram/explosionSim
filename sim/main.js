@@ -24,6 +24,8 @@ $(document).ready(function () {
     var raycaster = new THREE.Raycaster();
 
     var waterMesh;
+    var sphereMesh;
+    var boxMesh;
     var meshRay;
     var gpuCompute;
     var heightmapVariable;
@@ -96,7 +98,9 @@ $(document).ready(function () {
 
         var effectController = {
             mouseSize: 20.0,
-            viscosity: 0.03
+            viscosity: 0.03,
+            sphereRadius: 20,
+            boxSide: 20
         };
 
         var valuesChanger = function() {
@@ -105,15 +109,21 @@ $(document).ready(function () {
             heightmapVariable.material.uniforms.viscosityConstant.value = effectController.viscosity;
         };
 
+        var geometryChanger = function() {
+
+            sphereMesh.geometry.radius = effectController.sphereRadius;
+            boxMesh.geometry.height = effectController.boxSide;
+            boxMesh.geometry.width = effectController.boxSide;
+            boxMesh.geometry.depth = effectController.boxSide;
+        }
+
         gui.add( effectController, "mouseSize", 1.0, 100.0, 1.0 ).onChange( valuesChanger );
         gui.add( effectController, "viscosity", 0.0, 0.03, 0.001 ).onChange( valuesChanger );
 
+        gui.add( effectController, "sphereRadius", 1.0, 100.0, 1.0 ).onChange( geometryChanger );
+        gui.add( effectController, "boxSide", 1.0, 100.0, 1.0 ).onChange( geometryChanger );
+
         // Buttons for toggling the various propagations (temp, pressure, vel, density)
-        var buttonDefault = {
-            DefaultField: function() {
-                DefaultField();
-            }
-        };
         var buttonSmooth = {
             SmoothField: function() {
                 SmoothField();
@@ -140,22 +150,40 @@ $(document).ready(function () {
             }
         };
         var buttonExplosion = {
-            Explosion: function() {
+            AddExplosion: function() {
                 Explosion();
             }
-        }
+        };
+
+        var buttonSphere = {
+            ToggleSphere: function() {
+                sphereMesh.material.visible = ! sphereMesh.material.visible;
+            }
+        };
+
+        var buttonBox = {
+            ToggleBox: function() {
+                boxMesh.material.visible = ! boxMesh.material.visible;
+            }
+        };
+
 
         // Add buttons to the GUI.
-        gui.add( buttonDefault, 'DefaultField' );
         gui.add( buttonSmooth, 'SmoothField' );
         gui.add( buttonDensity, 'DensityField' );
         gui.add( buttonVel, 'VelocityField' );
         gui.add( buttonPres, 'PressureField' );
         gui.add( buttonTemp, 'TemperatureField' );
-        gui.add( buttonExplosion, 'Explosion' );
+        gui.add( buttonExplosion, 'AddExplosion' );
+        gui.add( buttonSphere, 'ToggleSphere' );
+        gui.add( buttonBox, 'ToggleBox' );
 
         initWater();
 
+        initSphere();
+
+        initBox();
+        
         valuesChanger();
     }
 
@@ -171,7 +199,8 @@ $(document).ready(function () {
                 }
             ] ),
             vertexShader: document.getElementById( 'waterVertexShader' ).textContent,
-            fragmentShader: THREE.ShaderChunk[ 'meshphong_frag' ]
+            fragmentShader: THREE.ShaderChunk[ 'meshphong_frag' ],
+            vertexColors: THREE.VertexColors
 
         } );
 
@@ -192,8 +221,6 @@ $(document).ready(function () {
         material.defines.WIDTH = WIDTH.toFixed( 1 );
         material.defines.BOUNDS = BOUNDS.toFixed( 1 );
 
-        material.vertexColors = THREE.VertexColors; // Need for gradient
-
         return material;
     }
 
@@ -210,7 +237,7 @@ $(document).ready(function () {
                 var r = ( x / SIZE ) + 0.5; // Test gradient
                 var g = ( y / SIZE ) + 0.5;
 
-                colors.push( r, g, 0.5 );
+                colors.push( r, g, 0.7 );
             }
         }
 
@@ -229,6 +256,7 @@ $(document).ready(function () {
 
         scene.add( waterMesh );
 
+
         // Mesh just for mouse raycasting
         var geometryRay = new THREE.PlaneBufferGeometry( BOUNDS, BOUNDS, 1, 1 );
         meshRay = new THREE.Mesh( geometryRay, new THREE.MeshBasicMaterial( { color: 0xFFFFFF, visible: false } ) );
@@ -239,7 +267,6 @@ $(document).ready(function () {
 
 
         // Creates the gpu computation class and sets it up
-
         gpuCompute = new GPUComputationRenderer( WIDTH, WIDTH, renderer );
 
         var heightmap0 = gpuCompute.createTexture();
@@ -263,6 +290,26 @@ $(document).ready(function () {
 
         // Create compute shader to smooth the water surface and velocity
         smoothShader = gpuCompute.createShaderMaterial( document.getElementById( 'smoothFragmentShader' ).textContent, { texture: { value: null } } );
+    }
+
+    function initSphere() {
+
+        var geometry = new THREE.SphereGeometry( 20, 32, 32 );
+        var material = new THREE.MeshNormalMaterial();
+
+        sphereMesh = new THREE.Mesh( geometry, material );
+
+        scene.add( sphereMesh );
+    }
+
+    function initBox() {
+
+        var geometry = new THREE.BoxGeometry( 20, 20, 20 );
+        var material = new THREE.MeshNormalMaterial();
+
+        boxMesh = new THREE.Mesh( geometry, material );
+
+        scene.add( boxMesh );
     }
 
     function fillTexture( texture ) {
