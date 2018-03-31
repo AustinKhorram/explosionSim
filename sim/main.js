@@ -112,17 +112,11 @@ $(document).ready(function () {
             heightmapVariable.material.uniforms.viscosityConstant.value = effectController.viscosity;
         };
         var geometryChanger = function() {
+            var newRadius = effectController.sphereRadius;
+            sphereMesh.geometry = new THREE.SphereGeometry( newRadius, 32, 32 );
 
-            sphereMesh.geometry.radius = effectController.sphereRadius;
-            boxMesh.geometry.height = effectController.boxSide;
-            boxMesh.geometry.width = effectController.boxSide;
-            boxMesh.geometry.depth = effectController.boxSide;
-
-            sphereMesh.geometry.verticesNeedUpdate = true;
-            sphereMesh.geometry.facesNeedUpdate = true;
-
-            boxMesh.geometry.verticesNeedUpdate = true;
-            boxMesh.geometry.facesNeedUpdate = true;
+            var newSide = effectController.boxSide;
+            boxMesh.geometry = new THREE.BoxGeometry( newSide, newSide, newSide );
         };
 
         gui.add( effectController, "mouseSize", 1.0, 100.0, 1.0 ).onChange( valuesChanger );
@@ -314,7 +308,7 @@ $(document).ready(function () {
         var geometry = new THREE.BoxGeometry( 20, 20, 20 );
         var material = new THREE.MeshNormalMaterial();
         material.visible = false;
-        
+
         boxMesh = new THREE.Mesh( geometry, material );
 
         scene.add( boxMesh );
