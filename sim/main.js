@@ -54,7 +54,7 @@ $(document).ready(function () {
 
         // Initalize Camera/Scene
         camera = new THREE.PerspectiveCamera( 80, window.innerWidth / window.innerHeight, 1, 3000 );
-        camera.position.set( 0, 100, 0);
+        camera.position.set( 0, 150, 0);
         scene = new THREE.Scene();
 
         // Lighting for our scene (we need this)
@@ -85,6 +85,9 @@ $(document).ready(function () {
 
                 waterMesh.material.wireframe = ! waterMesh.material.wireframe;
                 waterMesh.material.needsUpdate = true;
+
+                boxMesh.material.wireframe = ! boxMesh.material.wireframe;
+                sphereMesh.material.wireframe = ! sphereMesh.material.wireframe;
             }
 
         } , false );
@@ -108,14 +111,19 @@ $(document).ready(function () {
             heightmapVariable.material.uniforms.mouseSize.value = effectController.mouseSize;
             heightmapVariable.material.uniforms.viscosityConstant.value = effectController.viscosity;
         };
-
         var geometryChanger = function() {
 
             sphereMesh.geometry.radius = effectController.sphereRadius;
             boxMesh.geometry.height = effectController.boxSide;
             boxMesh.geometry.width = effectController.boxSide;
             boxMesh.geometry.depth = effectController.boxSide;
-        }
+
+            sphereMesh.geometry.verticesNeedUpdate = true;
+            sphereMesh.geometry.facesNeedUpdate = true;
+
+            boxMesh.geometry.verticesNeedUpdate = true;
+            boxMesh.geometry.facesNeedUpdate = true;
+        };
 
         gui.add( effectController, "mouseSize", 1.0, 100.0, 1.0 ).onChange( valuesChanger );
         gui.add( effectController, "viscosity", 0.0, 0.03, 0.001 ).onChange( valuesChanger );
@@ -154,7 +162,6 @@ $(document).ready(function () {
                 Explosion();
             }
         };
-
         var buttonSphere = {
             ToggleSphere: function() {
                 sphereMesh.material.visible = ! sphereMesh.material.visible;
@@ -166,7 +173,6 @@ $(document).ready(function () {
                 boxMesh.material.visible = ! boxMesh.material.visible;
             }
         };
-
 
         // Add buttons to the GUI.
         gui.add( buttonSmooth, 'SmoothField' );
@@ -183,7 +189,7 @@ $(document).ready(function () {
         initSphere();
 
         initBox();
-        
+
         valuesChanger();
     }
 
@@ -296,6 +302,7 @@ $(document).ready(function () {
 
         var geometry = new THREE.SphereGeometry( 20, 32, 32 );
         var material = new THREE.MeshNormalMaterial();
+        material.visible = false;
 
         sphereMesh = new THREE.Mesh( geometry, material );
 
@@ -306,7 +313,8 @@ $(document).ready(function () {
 
         var geometry = new THREE.BoxGeometry( 20, 20, 20 );
         var material = new THREE.MeshNormalMaterial();
-
+        material.visible = false;
+        
         boxMesh = new THREE.Mesh( geometry, material );
 
         scene.add( boxMesh );
