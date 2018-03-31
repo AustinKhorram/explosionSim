@@ -27,6 +27,7 @@ $(document).ready(function () {
     var sphereMesh;
     var boxMesh;
     var meshRay;
+
     var gpuCompute;
     var heightmapVariable;
     var waterUniforms;
@@ -79,7 +80,7 @@ $(document).ready(function () {
         document.addEventListener( 'touchstart', onDocumentTouchStart, false );
         document.addEventListener( 'touchmove', onDocumentTouchMove, false );
 
-        // Toggle wirefrae when key W is pressed.
+        // Toggle wireframe when key W is pressed.
         document.addEventListener( 'keydown', function( event ) {
             if ( event.keyCode === 87 ) {
 
@@ -97,7 +98,7 @@ $(document).ready(function () {
         var gui = new dat.GUI();
 
         stats = new Stats();
-        document.body.appendChild(stats.dom);
+        document.body.appendChild( stats.dom );
 
         var effectController = {
             mouseSize: 20.0,
@@ -112,6 +113,7 @@ $(document).ready(function () {
             heightmapVariable.material.uniforms.viscosityConstant.value = effectController.viscosity;
         };
         var geometryChanger = function() {
+
             var newRadius = effectController.sphereRadius;
             sphereMesh.geometry = new THREE.SphereGeometry( newRadius, 32, 32 );
 
@@ -161,7 +163,6 @@ $(document).ready(function () {
                 sphereMesh.material.visible = ! sphereMesh.material.visible;
             }
         };
-
         var buttonBox = {
             ToggleBox: function() {
                 boxMesh.material.visible = ! boxMesh.material.visible;
@@ -246,9 +247,11 @@ $(document).ready(function () {
         geometry.getAttribute( 'color' ).setDynamic(true);
         colorsDefault = geometry.getAttribute( 'color' ).clone();
 
+        // Water material
         var material = initMaterial();
         waterUniforms = material.uniforms;
 
+        // Water mesh
         waterMesh = new THREE.Mesh( geometry, material );
         waterMesh.rotation.x = - Math.PI / 2;
         waterMesh.matrixAutoUpdate = false;
@@ -289,7 +292,8 @@ $(document).ready(function () {
         }
 
         // Create compute shader to smooth the water surface and velocity
-        smoothShader = gpuCompute.createShaderMaterial( document.getElementById( 'smoothFragmentShader' ).textContent, { texture: { value: null } } );
+        var heightmap_flat = gpuCompute.createTexture();
+        smoothShader = gpuCompute.createShaderMaterial( document.getElementById( 'smoothFragmentShader' ).textContent, { texture: heightmap_flat } );
     }
 
     function initSphere() {
@@ -339,7 +343,7 @@ $(document).ready(function () {
                 var x = i * 128 / WIDTH;
                 var y = j * 128 / WIDTH;
 
-                    pixels[ p + 0 ] = noise( x, y, 123.4 );
+                pixels[ p + 0 ] = noise( x, y, 123.4 );
                 pixels[ p + 1 ] = 0;
                 pixels[ p + 2 ] = 0;
                 pixels[ p + 3 ] = 1;
@@ -354,16 +358,19 @@ $(document).ready(function () {
      */
     function SmoothField() {
 
+        var texture = gpuCompute.createTexture(); // Should be flat by default
+        var flatShader = gpuCompute.createShaderMaterial( document.getElementById( 'heightmapFragmentShader' ).textContent, { texture: texture } );
+
         var currentRenderTarget = gpuCompute.getCurrentRenderTarget( heightmapVariable );
         var alternateRenderTarget = gpuCompute.getAlternateRenderTarget( heightmapVariable );
 
-        for ( var i = 0; i < 100; i++ ) {
+        for ( var i = 0; i < 11; i++ ) {
 
-            smoothShader.uniforms.texture.value = currentRenderTarget.texture;
-            gpuCompute.doRenderTarget( smoothShader, alternateRenderTarget );
+            flatShader.uniforms.texture.value = currentRenderTarget.texture;
+            gpuCompute.doRenderTarget( flatShader, alternateRenderTarget );
 
-            smoothShader.uniforms.texture.value = alternateRenderTarget.texture;
-            gpuCompute.doRenderTarget( smoothShader, currentRenderTarget );
+            flatShader.uniforms.texture.value = alternateRenderTarget.texture;
+            gpuCompute.doRenderTarget( flatShader, currentRenderTarget );
         }
     }
 
@@ -371,8 +378,26 @@ $(document).ready(function () {
      * Function to create an explosion in centre
      */
     function Explosion() {
-        var uniforms = heightmapVariable.material.uniforms;
-        uniforms.mousePos.value.set( 10000, 10000 );
+
+        // Trying to create a texture with noise
+        var texture_noise = gpuCompute.createTexture();
+        fillTexture( texture_noise );
+
+        // Using gpuCompute to create a shader (wtf is a shader) with that texture
+        var noiseShader = gpuCompute.createShaderMaterial( document.getElementById( 'heightmapFragmentShader' ).textContent, { texture: texture_noise } );
+
+        // Don't understand why we need two targets
+        var currentRenderTarget = gpuCompute.getCurrentRenderTarget( heightmapVariable );
+        var alternateRenderTarget = gpuCompute.getAlternateRenderTarget( heightmapVariable );
+
+        for ( var i = 0; i < 1; i++ ) {
+            // Trying to apply shader to material
+            noiseShader.uniforms.texture.value = currentRenderTarget.texture;
+            gpuCompute.doRenderTarget( noiseShader, alternateRenderTarget );
+
+            noiseShader.uniforms.texture.value = alternateRenderTarget.texture;
+            gpuCompute.doRenderTarget( noiseShader, currentRenderTarget );
+        }
     }
     /*
      * Reset color gradient state to default
@@ -402,7 +427,6 @@ $(document).ready(function () {
             meshColor.setZ(i, magnitude);
         }
     }
-
     /*
      * Maps PRESSURE values to specific COLORS on the mesh
      * GREEN = HIGH, BLUE = LOW (can change color schemes).
@@ -418,7 +442,6 @@ $(document).ready(function () {
        }
        */
      }
-
     /*
      * Maps TEMPERATURE values to specific COLORS on the mesh.
      * RED = HIGH, BLUE = LOW (can change color schemes).
@@ -438,7 +461,6 @@ $(document).ready(function () {
             meshColor.setZ(i, magnitude);
         }
     }
-
     /*
      * Maps VELOCITY values to specific COLORS on the mesh.
      * GREEN = HIGH, BLUE = LOW (can change color schemes).
